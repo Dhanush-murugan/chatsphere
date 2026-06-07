@@ -1,0 +1,77 @@
+name: Deploy Documentation to GitHub Pages
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'docs/**'
+      - '.github/workflows/docs.yml'
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+    
+    - name: Setup Pages
+      uses: actions/configure-pages@v3
+    
+    - name: Build documentation site
+      run: |
+        mkdir -p _site
+        cp -r docs/* _site/
+        cp README.md _site/
+        cd _site
+        # Create index.html if it doesn't exist
+        if [ ! -f index.html ]; then
+          cat > index.html << 'EOF'
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>ChatSphere - Documentation</title>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <style>
+                body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 40px; }
+                a { color: #0366d6; }
+                h1 { color: #24292e; }
+            </style>
+        </head>
+        <body>
+            <h1>ChatSphere Documentation</h1>
+            <ul>
+                <li><a href="README.md">Project Overview</a></li>
+                <li><a href="SETUP_GUIDE.md">Setup Guide</a></li>
+                <li><a href="ARCHITECTURE.md">Architecture</a></li>
+                <li><a href="API_REFERENCE.md">API Reference</a></li>
+                <li><a href="DATABASE_SCHEMA.md">Database Schema</a></li>
+                <li><a href="DEPLOYMENT_GUIDE.md">Deployment Guide</a></li>
+                <li><a href="ROADMAP.md">Roadmap</a></li>
+            </ul>
+        </body>
+        </html>
+        EOF
+        fi
+    
+    - name: Upload artifact
+      uses: actions/upload-pages-artifact@v1
+      with:
+        path: '_site'
+    
+    - name: Deploy to GitHub Pages
+      id: deployment
+      uses: actions/deploy-pages@v2
